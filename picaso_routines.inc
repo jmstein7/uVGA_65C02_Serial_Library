@@ -152,7 +152,7 @@ uTxt_Opacity    PHA   ;*selects whether or not the 'background' pixels are drawn
                 JSR Put_Chr
                 LDA #0
                 JSR Put_Chr
-                LDA txt_opacity   ;*Mode 1 ON (Opaque)
+                LDA txt_opacity   ;*Mode 1 ON  (Opaque)
                 JSR Put_Chr       ;*Mode 0 OFF (Transparent)
                 JSR getAckResp
                 PLA
@@ -285,7 +285,8 @@ uTxt_AttSet             PHA
                         JSR Put_Chr
                         LDA #<F_txt_Attributes
                         JSR Put_Chr
-                        STZ Put_Chr
+                        LDA #0
+                        JSR Put_Chr
                         PLA 
                         ORA uTXT_Attributes     ; Set unset bits viz A
                         STA uTXT_Attributes     ; Store to memory
@@ -298,7 +299,8 @@ uTxt_AttReset           PHA
                         JSR Put_Chr
                         LDA #<F_txt_Attributes
                         JSR Put_Chr
-                        STZ Put_Chr
+                        LDA #0
+                        JSR Put_Chr
                         PLA
                         AND uTXT_Attributes     ; Mask Accumulator with only ON bits
                         EOR uTXT_Attributes     ; Flip ON to OFF
@@ -457,7 +459,7 @@ uDraw_Rectangle  PHA    ;*Draw a Rectangle
                  
 uFilled_Rectangle  PHA    ;*Draw a Filled Rectangle 
                    PHY    ; to point
-                ;
+                          ;
                  LDA #>F_gfx_RectangleFilled
                  JSR Put_Chr
                  LDA #<F_gfx_RectangleFilled
