@@ -18,3 +18,4 @@ The picaso_routines.inc contains the main library of routines.
 
 This library requires a Picaso module connected to a 65Cxx system via an ACIA serial connection. 
 
+Feel free to contact me through the 6502 forum: http://forum.6502.org/memberlist.php?mode=viewprofile&u=3597
