@@ -5,7 +5,7 @@ This is a 65C02 and 65C816 Library for 4D Systems Serial Environement for Picaso
 For the moment, I have only completed routines for the TEXT and GRAPHICS commands, along with PEEK and POKE. I will be adding
 in more command categories over time.
 
-This library provides constants for the 65C02 and 65C816 (and 65C265) based processors and demonstrates how to use them, 
+This library provides constants and routines for the 65C02 and 65C816 (and 65C265) based processors and demonstrates how to use them, 
 to ease communication with Picaso based modules when using the module configured for Serial. Please refer to the 4D Systems 
 website, namingly the Workshop 4 Product Page, for documentation regarding Workshop 4, and its environments.
 
