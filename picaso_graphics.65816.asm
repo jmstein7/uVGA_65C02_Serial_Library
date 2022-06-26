@@ -243,7 +243,50 @@ Send_bytesH	= $7B
                 LDA #<LAWNGREEN
                 STA uColorL
                 JSR uDraw_Polygon
-
+                ;
+                ;*Test SD card tools
+                ;
+                LDA #<MSG5
+                STA MSGL
+                LDA #>MSG5
+		STA MSGH
+                JSR uCopy_String        ;*Move file name to String Buffer
+                ;
+                JSR uFile_Mount
+                LDA "w"                 ;*open new file for writing
+                JSR uFile_Open          ; and get file handle
+                ;
+                LDA #<MSG4
+                STA MSGL
+                LDA #>MSG4
+		STA MSGH
+                JSR uCopy_String        ;*Move MSG4 to String Buffer
+                ;
+                JSR uWrite_String2SD    ;*Write MSG4 to SD
+                JSR uFile_Close
+                ;
+                LDA #<MSG2
+                STA MSGL
+                LDA #>MSG2
+		STA MSGH
+                JSR uCopy_String        ;*Overwrite string buffer
+                ;
+                ;
+                LDA #<MSG5
+                STA MSGL
+                LDA #>MSG5
+		STA MSGH
+                JSR uCopy_String        ;*Move file name to String Buffer
+                ;
+                JSR uFile_Mount
+                LDA "r"                 ;*open new file for reading
+                JSR uFile_Open          ; and get the file handle
+                ;
+                LDA #14                 ;*Get 14 characters from the SD
+                JSR uReadSD_2String
+                JSR uFile_Close
+                JSR uFile_Unmount
+                
 ;       RESTORE STATE AND RETURN
                 ;Done and restore state
 Done            SEP #$10
@@ -553,3 +596,5 @@ Short_Pause     PHX
 MSG1      .textz "uVGA - Invalid Response "
 MSG2      .textz "Hello World!"
 MSG3      .textz "Processor 2 is Online!"
+MSG4      .textz "SD Card System is Online!"
+MSG5      .textz "test_sd.txt"

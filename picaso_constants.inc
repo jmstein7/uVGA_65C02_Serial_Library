@@ -70,6 +70,13 @@ uScaleH	    = $B3
 uScaleL         = $B4
 uMsecH	    = $B5
 uMsecL	    = $B6
+;
+;*Here, we have some file routines
+;
+uHandleH	    = $B7
+uHandleL	    = $B8
+uStrLenH	    = $B9
+uStrLenL	    = $BA
 
 ;
 ;   The 16 bit RGB (565) Color Chart

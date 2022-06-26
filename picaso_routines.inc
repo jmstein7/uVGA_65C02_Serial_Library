@@ -964,9 +964,10 @@ uFill_Ellipse:   PHA    ;*Draw a Filled Ellipse
                  PLA
                  RTS
                 ;
-uDraw_Button    PHA     ;*Draw Button command draws a
-                PHY     ; 3 dimensional Text Button
-                PHX     ; Accumulator used for button state (on/off)
+;*Drawing a Button
+uDraw_Button    PHY     ;*Draw Button command draws a
+                PHX     ; 3 dimensional Text Button
+                PHA     ; Accumulator used for button state (on/off)
                         ; 
                 LDA #>F_gfx_Button
                 JSR Put_Chr
@@ -1024,8 +1025,9 @@ uDraw_Button    PHA     ;*Draw Button command draws a
                 PLY
                 RTS
                 ;
-uDraw_Panel     PHA     ;*Draw Panel command draws a
-                PHY     ; 3 dimensional Text Panel
+;*Drawing a Panel
+uDraw_Panel     PHY     ;*Draw Panel command draws a
+                PHA     ; 3 dimensional Text Panel
                         ; accumulator used for state (recessed/raised)
                         ; 
                 LDA #>F_gfx_Panel
@@ -1065,8 +1067,9 @@ uDraw_Panel     PHA     ;*Draw Panel command draws a
                 PLY
                 RTS
                 ;
-uDraw_Slider    PHA     ;*Draw Slider command draws a
-                PHY     ; 3 dimensional slider
+;*Draw Slider
+uDraw_Slider    PHY     ;*Draw Slider command draws a
+                PHA     ; 3 dimensional slider
                         ;*accumulator used for state (indented/raised/hidden)
                         ;*X register sets initial slider value
                 LDA #>F_gfx_Slider
@@ -1162,6 +1165,7 @@ uCopy_Paste     PHA     ;*Screen Copy Paste command copies an area of a screen f
                 RTS
                 ;
                 ;
+;*Bevel
 uBevel_Shadow   PHA     ;*Bevel Shadow command changes the graphics
                         ; “Draw Button” commands bevel shadow depth
                         ;*accumulator used for bevel depth value 
@@ -1411,6 +1415,178 @@ uPokeM:
                  PLA
                  RTS 
 ;
+;************************
+; FAT16 FILE Operations *
+;************************
+;
+uFile_Mount     PHA
+                LDA #>F_file_Mount ;*Starts up the FAT16 disk file services
+                JSR Put_Chr
+                LDA #<F_file_Mount
+                JSR Put_Chr
+                JSR getAckResp ;*(response of 0 = a fail)
+                PLA            ; anything else is okay
+                RTS
+;
+;OPEN FILE
+uFile_Open      PHX       ;*Returns a handle if the file exists.
+                PHA       ; Name of the file(s) to be opened (passed as a string).
+                LDX #0    ; Filename must be 8.3 format, stored in string buffer
+                LDA #>F_file_Open
+                JSR Put_Chr
+                LDA #<F_file_Open
+                JSR Put_Chr
+@next_char      LDA Txt_String1,X   ;*Here, we index a pointer to the
+                JSR Put_Chr         ; string. Loads a character at a time.
+                CMP #0              ;*String is terminated with a NULL
+                BEQ @str_done       ; Filename must be 8.3 format!
+                INX 
+                BRA @next_char
+@str_done       LDA #0          ; <-- NULL Byte to SD Card
+                JSR Put_Chr     ;*Accumulator holds the MODE byte 
+                PLA             ; 'r' or 0x72 for File Read
+                JSR Put_Chr     ; 'w' or 0x77 for File Write
+                                ; 'a' or 0x61 for File Append
+                JSR getAck      ;*ACK Byte
+                ;
+@responseH      LDA uVGA_Status
+                AND #%10000000
+                CMP #$80
+                BNE @responseH
+                LDA uVGA_Data
+                STA uHandleH    ;*We save the handle to uHandle word
+                ;
+@responseL      LDA uVGA_Status
+                AND #%10000000
+                CMP #$80
+                BNE @responseL
+                LDA uVGA_Data
+                STA uHandleL
+                ;               ;*Returns handle if file exists.
+                PLX             ;*Handle now used as reference  
+                RTS             ; for further file commands.
+;
+;WRITE STRING TO SD CARD
+uWrite_String2SD   
+                PHA          ;*The Write String command writes a
+                PHX          ; null terminated string to the file
+                ;
+                LDX #0
+                LDA #>F_file_PutS ;*Send command
+                JSR Put_Chr
+                LDA #<F_file_PutS
+                JSR Put_Chr
+                ;
+@next_char      LDA Txt_String1,X   ;*Here, we index a pointer to the
+                JSR Put_Chr         ; string. Loads a character at a time.
+                CMP #0              ;*String is terminated with a NULL
+                BEQ @done
+                INX 
+                BRA @next_char
+                                ;
+@done           LDA #0          ; <-- NULL Byte to SD Card
+                JSR Put_Chr     ;
+                                ;
+                LDA uHandleH    ;*send file's HANDLE to the
+                JSR Put_Chr     ; SD Card, stored to uHandle
+                LDA uHandleL    
+                JSR Put_Chr
+                JSR getAckResp  ;*returns length of string written
+                PLX
+                PLA
+                RTS
+;
+;
+;SD CARD File Close
+uFile_Close   
+                PHA       ;*close the file with the 
+                          ; given handle value
+                LDA #>F_file_Close ;*Send command
+                JSR Put_Chr
+                LDA #<F_file_Close
+                JSR Put_Chr
+                ;                                ;
+                LDA uHandleH    ;*send active file HANDLE to the
+                JSR Put_Chr     ; SD Card, as stored to uHandle
+                LDA uHandleL    
+                JSR Put_Chr
+                JSR getAckResp  ;*returns status as a word
+                                ; 1 for closed, 0 for not closed
+                PLA
+                RTS
+;
+;SD CARD File Unmount
+uFile_Unmount   
+                PHA       ;*releases any buffers for FAT16 
+                          ; and unmounts the Disk File System
+                LDA #>F_file_Unmount ;*Send command
+                JSR Put_Chr
+                LDA #<F_file_Unmount
+                JSR Put_Chr
+                ;                                
+                JSR getAck  ;*returns ACK
+                ;
+                PLA
+                RTS
+;
+;*Pull String from SD
+uReadSD_2String                 ;*reads a line of text from a file
+                PHX
+                PHA             ;*A contains maximum number of bytes to be read 
+                ;
+                LDA #>F_file_GetS
+                JSR Put_Chr
+                LDA #<F_file_GetS
+                JSR Put_Chr
+                ;
+                LDA #0          ;*Null high byte
+                JSR Put_Chr     ; 
+                PLA             ;*Pull Accumulator value off the stack (load)
+                JSR Put_Chr     ;*Writes value (up to 254)
+                ;                                ;
+                LDA uHandleH    ;*send active file HANDLE to the
+                JSR Put_Chr     ; SD Card, as stored in address uHandle
+                LDA uHandleL    
+                JSR Put_Chr
+                ;
+                JSR getAck      ;*Get ACK byte and one word representing the
+                                ; actual number of bytes read, up to a NULL
+                ;
+@responseH      LDA uVGA_Status
+                AND #%10000000
+                CMP #$80
+                BNE @responseH
+                LDA uVGA_Data
+                STA uStrLenH    ;*Saves the number of bytes to the uStrLen word
+                ;
+@responseL      LDA uVGA_Status
+                AND #%10000000
+                CMP #$80
+                BNE @responseL
+                LDA uVGA_Data
+                DEC A               ;*Decrement accumulator once
+                STA uStrLenL
+                LDX #0              ;*reset X value to 0
+                ;
+@get_string     LDA uVGA_Status
+                AND #%10000000
+                CMP #$80
+                BNE @get_string
+                LDA uVGA_Data       ;*grab char from the SD
+                ;
+                STA Txt_String1,X   ;*Here, we index a pointer to the
+                CPX uStrLenL        ; string
+                BEQ @done
+                INX 
+                BRA @get_string
+                ; 
+@done
+                INX
+                STZ Txt_String1,X   ;*String is terminated with a NULL
+                ;
+                PLX
+                RTS                 ; 
+;
 ; Intrinsic Picaso uVGA routines
 ;
 
@@ -1542,7 +1718,7 @@ GetByte		PHX
 ; output to OutPut Port
 ;
 
-Put_Chr	   	PHX
+Put_Chr	   	    PHX
                 LDX #$88
 @delay          CPX #0
                 BEQ @continue
